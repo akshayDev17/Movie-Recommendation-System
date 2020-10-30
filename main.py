@@ -10,37 +10,54 @@ import pickle
 import requests
 
 # load the nlp model and tfidf vectorizer from disk
-filename = 'nlp_model.pkl'
+filename = './models/nlp_model.pkl'
 clf = pickle.load(open(filename, 'rb'))
-vectorizer = pickle.load(open('transform.pkl','rb'))
+vectorizer = pickle.load(open('./models/transform.pkl','rb'))
+
+data, similarity = None, None
 
 def create_similarity():
     data = pd.read_csv('./dataset/main_data.csv')
     # creating a count matrix
     cv = CountVectorizer()
+
+    # this needs a list of sentences, which it calls "a list of documents"
+    # and in-turn after enlisting all unique words across all documents,
+    # returns count of each of these unique words across each and every
+    # document, thus returning a list of list, i.e. a matrix
     count_matrix = cv.fit_transform(data['comb'])
+
+    # similarity is w.r.t. occurence of the:
+    # 1. actor-1/actor-2/actor-3/director-name
+    # 2. genre(s)
+    # since "comb" column contains a concatenation of these entries
+
     # creating a similarity score matrix
     similarity = cosine_similarity(count_matrix)
     return data,similarity
 
 def rcmd(m):
+    '''
+    Queries throughout the .csv database,
+    to look whether we have any movie with 
+    the same title as the one entered by the user
+    '''
     m = m.lower()
-    try:
-        data.head()
-        similarity.shape
-    except:
-        data, similarity = create_similarity()
+    print(json.dumps(list(data['movie_title']), indent=2), file=open("./dataset/sample.txt", "w+"))
     if m not in data['movie_title'].unique():
         return('Sorry! The movie you requested is not in our database. Please check the spelling or try with some other movies')
     else:
-        i = data.loc[data['movie_title']==m].index[0]
-        lst = list(enumerate(similarity[i]))
-        lst = sorted(lst, key = lambda x:x[1] ,reverse=True)
+        i = data.loc[data['movie_title']==m].index[0] # first matched entry in database(.csv)
+        lst = list(enumerate(similarity[i])) # count-vectorized row for this movie
+        lst = sorted(lst, key = lambda x:x[1] ,reverse=True) # reverse sort the 
+        # count-vectorized row, thus finding other movies that match the most number of keywrods associated to this movie.
+
         lst = lst[1:11] # excluding first item since it is the requested movie itself
         l = []
         for i in range(len(lst)):
             a = lst[i][0]
             l.append(data['movie_title'][a])
+        # a list of top-10 matched movies w.r.t. current searched one
         return l
     
 # converting list of string to list (eg. "["abc","def"]" to ["abc","def"])
@@ -65,11 +82,13 @@ def home():
 
 @app.route("/similarity",methods=["POST"])
 def similarity():
-    movie = request.form['name']
+    movie = request.form['name'] # parse text-entry in search bar
     rc = rcmd(movie)
     if type(rc)==type('string'):
+        # error message of "Sorry! The movie requested....." is returned from rcmd()
         return rc
     else:
+        # list of matching movies returned from rcmd()
         m_str="---".join(rc)
         return m_str
 
@@ -150,4 +169,5 @@ def recommend():
         movie_cards=movie_cards,reviews=movie_reviews,casts=casts,cast_details=cast_details)
 
 if __name__ == '__main__':
+    data, similarity = create_similarity()
     app.run(debug=True)

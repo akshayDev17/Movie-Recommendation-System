@@ -1,6 +1,8 @@
 .env
 preprocessing/.env
 preprocessing/*.ipynb_checkpoints
+preprocessing/temp.ipynb
 dataset/archive.zip
 dataset/
 mrs*
+

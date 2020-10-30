@@ -1,8 +1,9 @@
 $(function() {
     // Button will be disabled until we type anything inside the input field
-    const source = document.getElementById('autoComplete');
+    const source = document.getElementById('autoComplete'); // search bar element
     const inputHandler = function(e) {
         if (e.target.value == "") {
+            // search bar is empty
             $('.movie-button').attr('disabled', true);
         } else {
             $('.movie-button').attr('disabled', false);
@@ -14,6 +15,11 @@ $(function() {
         // api-key required for get request to tmdb
         // see load_details function
         var my_api_key = '0cd5cc22462c9e0ecbdd3d42b511062e';
+
+        /* the user will usually select one of the
+        options displayed in the autocompleted list,
+        assuming this, grab the resultant 
+        text in the search bar*/
         var title = $('.movie').val();
         if (title == "") {
             $('.results').css('display', 'none');
@@ -38,11 +44,15 @@ function load_details(my_api_key, title) {
         url: 'https://api.themoviedb.org/3/search/movie?api_key=' + my_api_key + '&query=' + title,
 
         success: function(movie) {
+            // if request to tmdb is successful
             if (movie.results.length < 1) {
+                // no movies are returned however from tmdb
                 $('.fail').css('display', 'block');
                 $('.results').css('display', 'none');
                 $("#loader").delay(500).fadeOut();
             } else {
+                // atleast 1 movie matched with the given title 
+                // and its json object is returned as response
                 $("#loader").fadeIn();
                 $('.fail').css('display', 'none');
                 $('.results').delay(1000).css('display', 'block');
@@ -52,6 +62,7 @@ function load_details(my_api_key, title) {
             }
         },
         error: function() {
+            // if request to tmdb fails
             alert('Invalid Request');
             $("#loader").delay(500).fadeOut();
         },
@@ -73,7 +84,7 @@ function movie_recs(movie_title, movie_id, my_api_key) {
                 $('.fail').css('display', 'none');
                 $('.results').css('display', 'block');
                 var movie_arr = recs.split('---');
-                var arr = [];
+                var arr = []; // list of top-10 similar movies
                 for (const movie in movie_arr) {
                     arr.push(movie_arr[movie]);
                 }
@@ -81,6 +92,7 @@ function movie_recs(movie_title, movie_id, my_api_key) {
             }
         },
         error: function() {
+            // error in api, i.e. in the similarity() function in main.py
             alert("error recs");
             $("#loader").delay(500).fadeOut();
         },
@@ -105,6 +117,7 @@ function get_movie_details(movie_id, my_api_key, arr, movie_title) {
 // passing all the details to python's flask for displaying and scraping the movie reviews using imdb id
 function show_details(movie_details, arr, movie_title, my_api_key, movie_id) {
     var imdb_id = movie_details.imdb_id;
+    // fetch the poster of the current movie
     var poster = 'https://image.tmdb.org/t/p/original' + movie_details.poster_path;
     var overview = movie_details.overview;
     var genres = movie_details.genres;
@@ -117,15 +130,17 @@ function show_details(movie_details, arr, movie_title, my_api_key, movie_id) {
     for (var genre in genres) {
         genre_list.push(genres[genre].name);
     }
+    // convert movie duration to hours+minutes based system
     var my_genre = genre_list.join(", ");
     if (runtime % 60 == 0) {
         runtime = Math.floor(runtime / 60) + " hour(s)"
     } else {
         runtime = Math.floor(runtime / 60) + " hour(s) " + (runtime % 60) + " min(s)"
     }
-    arr_poster = get_movie_posters(arr, my_api_key);
+    arr_poster = get_movie_posters(arr, my_api_key); // fetch the poster for all suggested 
+    // movies, w.r.t. the current movie
 
-    movie_cast = get_movie_cast(movie_id, my_api_key);
+    movie_cast = get_movie_cast(movie_id, my_api_key); // cast of current movie 
 
     ind_cast = get_individual_cast(movie_cast, my_api_key);
 
